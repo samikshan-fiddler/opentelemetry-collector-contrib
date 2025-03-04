@@ -15,7 +15,7 @@ import (
 )
 
 func TestMetricBuilder(t *testing.T) {
-	mb := NewMetricBuilder()
+	mb := NewMetricBuilder(nil)
 	assert.NotNil(t, mb)
 
 	metrics := mb.Build()
@@ -23,7 +23,8 @@ func TestMetricBuilder(t *testing.T) {
 }
 
 func TestAddDataPoints(t *testing.T) {
-	// Create sample query results
+	timestamp := int64(1622505600000) // June 1, 2021, 00:00:00 UTC
+
 	results := map[string]client.QueryResult{
 		"query1": {
 			Model: client.Model{
@@ -36,7 +37,7 @@ func TestAddDataPoints(t *testing.T) {
 			},
 			Metric:   "traffic",
 			ColNames: []string{"timestamp", "count"},
-			Data:     [][]interface{}{{1622505600000.0, 42.0}},
+			Data:     [][]interface{}{{float64(timestamp), 42.0}},
 		},
 		"query2": {
 			Model: client.Model{
@@ -49,7 +50,7 @@ func TestAddDataPoints(t *testing.T) {
 			},
 			Metric:   "drift",
 			ColNames: []string{"timestamp", "feature1,drift_score"},
-			Data:     [][]interface{}{{1622505600000.0, 0.85}},
+			Data:     [][]interface{}{{float64(timestamp), 0.85}},
 		},
 		"query3": {
 			Model: client.Model{
@@ -62,7 +63,7 @@ func TestAddDataPoints(t *testing.T) {
 			},
 			Metric:   "performance",
 			ColNames: []string{"timestamp", "precision", "recall"},
-			Data:     [][]interface{}{{1622505600000.0, 0.92, 0.88}},
+			Data:     [][]interface{}{{float64(timestamp), 0.92, 0.88}},
 		},
 		"empty": {
 			Model: client.Model{
@@ -75,12 +76,9 @@ func TestAddDataPoints(t *testing.T) {
 		},
 	}
 
-	// Test time
-	timestamp := time.Date(2021, 6, 1, 12, 0, 0, 0, time.UTC)
-
 	// Build metrics
-	mb := NewMetricBuilder()
-	mb.AddDataPoints("Project 1", results, timestamp)
+	mb := NewMetricBuilder(nil)
+	mb.AddDataPoints("Project 1", results)
 	metrics := mb.Build()
 
 	// Verify resource metrics
@@ -108,6 +106,20 @@ func TestAddDataPoints(t *testing.T) {
 	expectedMetricCount := 4 // 1 + 1 + 2
 	assert.Equal(t, expectedMetricCount, sm.Metrics().Len())
 
+	// Create expected timestamp object
+	expectedTime := time.UnixMilli(timestamp)
+	expectedTimestamp := pcommon.NewTimestampFromTime(expectedTime)
+
+	// For all metrics, verify they have the correct timestamp
+	for i := 0; i < sm.Metrics().Len(); i++ {
+		metric := sm.Metrics().At(i)
+		if metric.Gauge().DataPoints().Len() > 0 {
+			dp := metric.Gauge().DataPoints().At(0)
+			assert.Equal(t, expectedTimestamp, dp.Timestamp(),
+				"Timestamp not preserved for metric %s", metric.Name())
+		}
+	}
+
 	// Helper to find a specific metric by name
 	findMetric := func(name string) (int, bool) {
 		for i := 0; i < sm.Metrics().Len(); i++ {
@@ -126,10 +138,10 @@ func TestAddDataPoints(t *testing.T) {
 	assert.Equal(t, "Fiddler traffic metric", trafficMetric.Description())
 	assert.Equal(t, "1", trafficMetric.Unit())
 
-	// Check traffic data points
+	// Check traffic data points and verify the correct timestamp
 	require.Equal(t, 1, trafficMetric.Gauge().DataPoints().Len())
 	dp := trafficMetric.Gauge().DataPoints().At(0)
-	assert.Equal(t, pcommon.NewTimestampFromTime(timestamp), dp.Timestamp())
+	assert.Equal(t, expectedTimestamp, dp.Timestamp())
 	assert.Equal(t, 42.0, dp.DoubleValue())
 
 	// Check traffic attributes
@@ -144,9 +156,10 @@ func TestAddDataPoints(t *testing.T) {
 	driftMetric := sm.Metrics().At(idx)
 	assert.Equal(t, "fiddler.drift", driftMetric.Name())
 
-	// Check drift data points
+	// Check drift data points and verify the correct timestamp
 	require.Equal(t, 1, driftMetric.Gauge().DataPoints().Len())
 	dp = driftMetric.Gauge().DataPoints().At(0)
+	assert.Equal(t, expectedTimestamp, dp.Timestamp())
 	assert.Equal(t, 0.85, dp.DoubleValue())
 
 	// Check drift attributes
@@ -154,6 +167,17 @@ func TestAddDataPoints(t *testing.T) {
 	val, ok = dpAttrs.Get("feature")
 	assert.True(t, ok)
 	assert.Equal(t, "feature1", val.Str())
+
+	// Check performance metrics
+	idx, found = findMetric("fiddler.performance")
+	assert.True(t, found)
+	perfMetric := sm.Metrics().At(idx)
+
+	// Verify performance metric timestamps
+	if perfMetric.Gauge().DataPoints().Len() > 0 {
+		dp = perfMetric.Gauge().DataPoints().At(0)
+		assert.Equal(t, expectedTimestamp, dp.Timestamp())
+	}
 }
 
 func TestSplitColumnName(t *testing.T) {

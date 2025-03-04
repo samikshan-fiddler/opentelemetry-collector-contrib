@@ -102,8 +102,7 @@ func (fr *fiddlerReceiver) collect(ctx context.Context) error {
 
 	fr.logger.Debug("Found models from Fiddler API", zap.Int("count", len(models)))
 
-	timestamp := time.Now()
-	mb := metadata.NewMetricBuilder()
+	mb := metadata.NewMetricBuilder(fr.logger)
 
 	// Process each model
 	for _, model := range models {
@@ -172,7 +171,7 @@ func (fr *fiddlerReceiver) collect(ctx context.Context) error {
 		}
 
 		// Add data points to metrics builder
-		mb.AddDataPoints(model.Project.Name, response.Data.Results, timestamp)
+		mb.AddDataPoints(model.Project.Name, response.Data.Results)
 	}
 
 	// Build and send metrics

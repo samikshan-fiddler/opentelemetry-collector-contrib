@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fiddlerreceiver/internal/client"
 )
@@ -17,12 +18,18 @@ import (
 // MetricBuilder is a helper to create metrics from Fiddler API responses
 type MetricBuilder struct {
 	metrics pmetric.Metrics
+	logger  *zap.Logger
 }
 
 // NewMetricBuilder creates a new MetricBuilder
-func NewMetricBuilder() *MetricBuilder {
+func NewMetricBuilder(logger *zap.Logger) *MetricBuilder {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
+
 	return &MetricBuilder{
 		metrics: pmetric.NewMetrics(),
+		logger:  logger,
 	}
 }
 
@@ -32,7 +39,7 @@ func (b *MetricBuilder) Build() pmetric.Metrics {
 }
 
 // AddDataPoints adds metrics data points from Fiddler API query results
-func (b *MetricBuilder) AddDataPoints(projectName string, results map[string]client.QueryResult, timestamp time.Time) {
+func (b *MetricBuilder) AddDataPoints(projectName string, results map[string]client.QueryResult) {
 	// Resource scope for all metrics
 	rm := b.metrics.ResourceMetrics().AppendEmpty()
 	resource := rm.Resource()
@@ -48,65 +55,92 @@ func (b *MetricBuilder) AddDataPoints(projectName string, results map[string]cli
 		modelName := result.Model.Name
 		metricName := "fiddler." + result.Metric
 
-		// Check if we have data
 		if len(result.Data) == 0 || len(result.ColNames) == 0 {
 			continue
 		}
 
-		// The last row has the most recent data
-		lastRow := result.Data[len(result.Data)-1]
-
-		// Process each column (skipping timestamp column)
-		for colIdx, colName := range result.ColNames {
-			if colName == "timestamp" {
+		for _, row := range result.Data {
+			if len(row) == 0 || len(row) != len(result.ColNames) {
 				continue
 			}
 
-			// Split column name for tags if in format "feature,metric_name"
-			var feature string
-			colNameParts := splitColumnName(colName)
-			if len(colNameParts) > 1 {
-				feature = colNameParts[0]
+			var timestampMs float64
+			var hasTimestamp bool
+
+			for i, colName := range result.ColNames {
+				if colName == "timestamp" && i < len(row) {
+					if tsValue, ok := row[i].(float64); ok {
+						timestampMs = tsValue
+						hasTimestamp = true
+						break
+					}
+				}
 			}
 
-			// Extract metric value
-			if colIdx >= len(lastRow) {
+			if !hasTimestamp {
+				// Log error but continue processing other data
+				b.logger.Error("Missing timestamp in row data",
+					zap.String("project", projectName),
+					zap.String("metric", result.Metric),
+					zap.String("model", result.Model.Name))
 				continue
 			}
 
-			var val float64
-			switch v := lastRow[colIdx].(type) {
-			case float64:
-				val = v
-			case int:
-				val = float64(v)
-			case string:
-				if f, err := strconv.ParseFloat(v, 64); err == nil {
-					val = f
-				} else {
+			// Convert milliseconds to time.Time
+			pointTimestamp := time.UnixMilli(int64(timestampMs))
+
+			// Process each column (skipping timestamp column)
+			for colIdx, colName := range result.ColNames {
+				if colName == "timestamp" {
 					continue
 				}
-			default:
-				continue
-			}
 
-			// Create gauge metric
-			metric := sm.Metrics().AppendEmpty()
-			metric.SetName(metricName)
-			metric.SetDescription("Fiddler " + result.Metric + " metric")
-			metric.SetUnit("1")
+				// Split column name for tags if in format "feature,metric_name"
+				var feature string
+				colNameParts := splitColumnName(colName)
+				if len(colNameParts) > 1 {
+					feature = colNameParts[0]
+				}
 
-			dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
-			dp.SetDoubleValue(val)
+				// Extract metric value
+				if colIdx >= len(row) {
+					continue
+				}
 
-			// Add attributes
-			dp.Attributes().PutStr("model", modelName)
-			if feature != "" {
-				dp.Attributes().PutStr("feature", feature)
-			}
-			if colName != result.Metric {
-				dp.Attributes().PutStr("metric_type", colName)
+				var val float64
+				switch v := row[colIdx].(type) {
+				case float64:
+					val = v
+				case int:
+					val = float64(v)
+				case string:
+					if f, err := strconv.ParseFloat(v, 64); err == nil {
+						val = f
+					} else {
+						continue
+					}
+				default:
+					continue
+				}
+
+				// Create gauge metric
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName(metricName)
+				metric.SetDescription("Fiddler " + result.Metric + " metric")
+				metric.SetUnit("1")
+
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(pointTimestamp))
+				dp.SetDoubleValue(val)
+
+				// Add attributes
+				dp.Attributes().PutStr("model", modelName)
+				if feature != "" {
+					dp.Attributes().PutStr("feature", feature)
+				}
+				if colName != result.Metric {
+					dp.Attributes().PutStr("metric_type", colName)
+				}
 			}
 		}
 	}
