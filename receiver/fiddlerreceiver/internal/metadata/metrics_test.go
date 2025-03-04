@@ -23,7 +23,10 @@ func TestMetricBuilder(t *testing.T) {
 }
 
 func TestAddDataPoints(t *testing.T) {
-	timestamp := int64(1622505600000) // June 1, 2021, 00:00:00 UTC
+	timestampStr := "2025-03-04T15:00:00+00:00"
+
+	expectedTime, err := time.Parse(time.RFC3339, timestampStr)
+	require.NoError(t, err)
 
 	results := map[string]client.QueryResult{
 		"query1": {
@@ -36,8 +39,8 @@ func TestAddDataPoints(t *testing.T) {
 				},
 			},
 			Metric:   "traffic",
-			ColNames: []string{"timestamp", "count"},
-			Data:     [][]interface{}{{float64(timestamp), 42.0}},
+			ColNames: []string{"timestamp", "traffic"},
+			Data:     [][]interface{}{{timestampStr, 50}},
 		},
 		"query2": {
 			Model: client.Model{
@@ -50,7 +53,7 @@ func TestAddDataPoints(t *testing.T) {
 			},
 			Metric:   "drift",
 			ColNames: []string{"timestamp", "feature1,drift_score"},
-			Data:     [][]interface{}{{float64(timestamp), 0.85}},
+			Data:     [][]interface{}{{timestampStr, 0.85}},
 		},
 		"query3": {
 			Model: client.Model{
@@ -63,7 +66,7 @@ func TestAddDataPoints(t *testing.T) {
 			},
 			Metric:   "performance",
 			ColNames: []string{"timestamp", "precision", "recall"},
-			Data:     [][]interface{}{{float64(timestamp), 0.92, 0.88}},
+			Data:     [][]interface{}{{timestampStr, 0.92, 0.88}},
 		},
 		"empty": {
 			Model: client.Model{
@@ -106,8 +109,6 @@ func TestAddDataPoints(t *testing.T) {
 	expectedMetricCount := 4 // 1 + 1 + 2
 	assert.Equal(t, expectedMetricCount, sm.Metrics().Len())
 
-	// Create expected timestamp object
-	expectedTime := time.UnixMilli(timestamp)
 	expectedTimestamp := pcommon.NewTimestampFromTime(expectedTime)
 
 	// For all metrics, verify they have the correct timestamp
@@ -142,7 +143,7 @@ func TestAddDataPoints(t *testing.T) {
 	require.Equal(t, 1, trafficMetric.Gauge().DataPoints().Len())
 	dp := trafficMetric.Gauge().DataPoints().At(0)
 	assert.Equal(t, expectedTimestamp, dp.Timestamp())
-	assert.Equal(t, 42.0, dp.DoubleValue())
+	assert.Equal(t, 50.0, dp.DoubleValue())
 
 	// Check traffic attributes
 	dpAttrs := dp.Attributes()

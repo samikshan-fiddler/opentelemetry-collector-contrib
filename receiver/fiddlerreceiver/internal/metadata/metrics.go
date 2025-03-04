@@ -64,30 +64,42 @@ func (b *MetricBuilder) AddDataPoints(projectName string, results map[string]cli
 				continue
 			}
 
-			var timestampMs float64
+			var pointTimestamp time.Time
 			var hasTimestamp bool
 
+			var timestampColIdx int = -1
 			for i, colName := range result.ColNames {
-				if colName == "timestamp" && i < len(row) {
-					if tsValue, ok := row[i].(float64); ok {
-						timestampMs = tsValue
-						hasTimestamp = true
-						break
+				if colName == "timestamp" {
+					timestampColIdx = i
+					break
+				}
+			}
+
+			// Extract and parse timestamp if column exists
+			if timestampColIdx >= 0 && timestampColIdx < len(row) {
+				if tsStr, ok := row[timestampColIdx].(string); ok {
+					var err error
+					pointTimestamp, err = time.Parse(time.RFC3339, tsStr)
+					if err != nil {
+						b.logger.Error("Failed to parse timestamp string",
+							zap.String("project", projectName),
+							zap.String("metric", result.Metric),
+							zap.String("model", modelName),
+							zap.String("timestamp", tsStr),
+							zap.Error(err))
+						continue
 					}
+					hasTimestamp = true
 				}
 			}
 
 			if !hasTimestamp {
-				// Log error but continue processing other data
 				b.logger.Error("Missing timestamp in row data",
 					zap.String("project", projectName),
 					zap.String("metric", result.Metric),
-					zap.String("model", result.Model.Name))
+					zap.String("model", modelName))
 				continue
 			}
-
-			// Convert milliseconds to time.Time
-			pointTimestamp := time.UnixMilli(int64(timestampMs))
 
 			// Process each column (skipping timestamp column)
 			for colIdx, colName := range result.ColNames {
