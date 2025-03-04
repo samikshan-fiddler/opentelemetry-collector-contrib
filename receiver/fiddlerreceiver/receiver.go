@@ -24,13 +24,12 @@ const (
 var defaultEnabledMetrics = []string{"drift", "traffic", "performance", "statistic", "service_metrics"}
 
 type fiddlerReceiver struct {
-	settings           receiver.Settings
-	config             *Config
-	consumer           consumer.Metrics
-	client             client.Client
-	logger             *zap.Logger
-	nextCollectionTime time.Time
-	stopCh             chan struct{}
+	settings receiver.Settings
+	config   *Config
+	consumer consumer.Metrics
+	client   client.Client
+	logger   *zap.Logger
+	stopCh   chan struct{}
 }
 
 func newFiddlerReceiver(config *Config, consumer consumer.Metrics, settings receiver.Settings) *fiddlerReceiver {
@@ -61,10 +60,6 @@ func (fr *fiddlerReceiver) Start(ctx context.Context, host component.Host) error
 		zap.Strings("enabled_metrics", fr.config.EnabledMetrics),
 	)
 
-	// Set the initial collection time to now
-	fr.nextCollectionTime = time.Now()
-
-	// Start the collection go routine
 	go fr.startCollection(ctx)
 
 	return nil
@@ -77,11 +72,8 @@ func (fr *fiddlerReceiver) startCollection(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			if time.Now().After(fr.nextCollectionTime) {
-				if err := fr.collect(ctx); err != nil {
-					fr.logger.Error("Failed to collect metrics from Fiddler", zap.Error(err))
-				}
-				fr.nextCollectionTime = time.Now().Add(fr.config.Interval)
+			if err := fr.collect(ctx); err != nil {
+				fr.logger.Error("Failed to collect metrics from Fiddler", zap.Error(err))
 			}
 		case <-fr.stopCh:
 			return
