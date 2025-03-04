@@ -21,7 +21,7 @@ func TestFactoryCreateDefaultConfig(t *testing.T) {
 
 	fiddlerCfg, ok := cfg.(*Config)
 	assert.True(t, ok, "configuration is not of type Config")
-	assert.Equal(t, defaultInterval, fiddlerCfg.Interval)
+	assert.Equal(t, defaultIntervalDuration, fiddlerCfg.Interval)
 }
 
 func TestCreateReceiver_Factory(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCreateReceiver_Factory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "https://api.fiddler.ai"
 	cfg.Token = "test-token"
-
+	cfg.EnabledMetrics = []string{"drift", "traffic", "performance", "statistic", "service_metrics"}
 	consumer := consumertest.NewNop()
 	receiver, err := factory.CreateMetrics(
 		context.Background(),
