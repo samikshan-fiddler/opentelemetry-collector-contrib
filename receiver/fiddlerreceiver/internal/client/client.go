@@ -117,7 +117,6 @@ func (c *HTTPClient) call(ctx context.Context, method, endpoint string, jsonRequ
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Integration", "otel-collector")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
