@@ -29,7 +29,7 @@ func TestCreateReceiver_Factory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "https://api.fiddler.ai"
 	cfg.Token = "test-token"
-
+	cfg.EnabledMetrics = []string{"drift", "traffic", "performance", "statistic", "service_metrics"}
 	consumer := consumertest.NewNop()
 	receiver, err := factory.CreateMetrics(
 		context.Background(),
