@@ -18,10 +18,11 @@ type Project struct {
 
 // Metric represents a metric type available for a model
 type Metric struct {
-	ID               string   `json:"id"`
-	Type             string   `json:"type"`
-	Columns          []string `json:"columns"`
-	RequiresBaseline bool     `json:"requires_baseline"`
+	ID                 string   `json:"id"`
+	Type               string   `json:"type"`
+	Columns            []string `json:"columns"`
+	RequiresCategories bool     `json:"requires_categories"`
+	RequiresBaseline   bool     `json:"requires_baseline"`
 }
 
 // Column represents a data column in Fiddler
@@ -75,13 +76,7 @@ type QueryResponse struct {
 type QueryResult struct {
 	Model    Model           `json:"model"`
 	Metric   string          `json:"metric"`
+	Columns  []string        `json:"columns"`
 	ColNames []string        `json:"col_names"`
 	Data     [][]interface{} `json:"data"`
-}
-
-// MetricDataPoint represents a processed data point from Fiddler
-type MetricDataPoint struct {
-	MetricName  string
-	MetricValue float64
-	Tags        []string
 }

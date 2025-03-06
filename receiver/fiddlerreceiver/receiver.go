@@ -112,6 +112,11 @@ func (fr *fiddlerReceiver) collect(ctx context.Context) error {
 			continue
 		}
 
+		// Add metric types to the builder
+		for _, metric := range metrics {
+			mb.AddMetricType(metric.ID, metric.Type)
+		}
+
 		// Filter metrics by enabled types
 		var enabledMetrics []client.Metric
 		for _, metric := range metrics {
@@ -176,6 +181,10 @@ func (fr *fiddlerReceiver) createQueries(ctx context.Context, modelID string, me
 	defaultBaselineName := "default_static_baseline"
 
 	for _, metric := range metrics {
+		if metric.RequiresCategories {
+			continue
+		}
+
 		baselineID := ""
 		if metric.RequiresBaseline {
 			var err error
