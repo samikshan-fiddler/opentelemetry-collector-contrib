@@ -21,7 +21,7 @@ func TestFactoryCreateDefaultConfig(t *testing.T) {
 
 	fiddlerCfg, ok := cfg.(*Config)
 	assert.True(t, ok, "configuration is not of type Config")
-	assert.Equal(t, defaultIntervalDuration, fiddlerCfg.Interval)
+	assert.Equal(t, defaultInterval, fiddlerCfg.Interval)
 }
 
 func TestCreateReceiver_Factory(t *testing.T) {

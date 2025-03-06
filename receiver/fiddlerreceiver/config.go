@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+const (
+	defaultEndpoint  = "localhost:8080"
+	defaultAuthToken = ""
+	defaultTimeout   = 5 * time.Minute
+	defaultInterval  = 30 * time.Minute
+	minimumInterval  = 5 * time.Minute
+)
+
 // Config defines configuration for the Fiddler receiver
 type Config struct {
 	// Endpoint for the Fiddler API (e.g., https://app.fiddler.ai)
@@ -23,13 +31,6 @@ type Config struct {
 	EnabledMetrics []string `mapstructure:"enabled_metrics"`
 }
 
-const (
-	defaultTimeout          = 5 * time.Minute
-	defaultIntervalDuration = 30 * time.Minute
-	minimumInterval         = 5 * time.Minute
-)
-
-// Validate checks if the receiver configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("endpoint must be specified")
@@ -40,7 +41,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Interval == 0 {
-		cfg.Interval = defaultIntervalDuration
+		cfg.Interval = defaultInterval
 		return nil
 	}
 

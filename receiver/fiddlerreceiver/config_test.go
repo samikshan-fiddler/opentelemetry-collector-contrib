@@ -24,9 +24,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.True(t, ok, "failed to convert to fiddler config")
 
 	assert.Equal(t, defaultTimeout, fiddlerCfg.Timeout)
-	assert.Equal(t, defaultIntervalDuration, fiddlerCfg.Interval)
-	assert.Equal(t, "test-token", fiddlerCfg.Token)
-	assert.Equal(t, "https://api.fiddler.ai", fiddlerCfg.Endpoint)
+	assert.Equal(t, defaultInterval, fiddlerCfg.Interval)
+	assert.Equal(t, defaultEndpoint, fiddlerCfg.Endpoint)
+	assert.Equal(t, defaultAuthToken, fiddlerCfg.Token)
 }
 
 func TestValidateConfig(t *testing.T) {

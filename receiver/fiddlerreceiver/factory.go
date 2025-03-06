@@ -22,10 +22,10 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint:       "https://api.fiddler.ai",
-		Token:          "test-token",
+		Endpoint:       defaultEndpoint,
+		Token:          defaultAuthToken,
 		Timeout:        defaultTimeout,
-		Interval:       defaultIntervalDuration,
+		Interval:       defaultInterval,
 		EnabledMetrics: defaultEnabledMetrics,
 	}
 }
