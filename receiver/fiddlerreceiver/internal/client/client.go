@@ -125,8 +125,14 @@ func (c *HTTPClient) call(ctx context.Context, method, endpoint string, jsonRequ
 
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("HTTP request failed with status code %d: %s", resp.StatusCode, string(body))
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyStr := string(bodyBytes)
+
+		return nil, &APIError{
+			StatusCode: resp.StatusCode,
+			Message:    bodyStr,
+			Endpoint:   endpoint,
+		}
 	}
 
 	return resp, nil

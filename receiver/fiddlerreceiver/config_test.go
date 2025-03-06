@@ -4,6 +4,7 @@
 package fiddlerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fiddlerreceiver"
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -56,7 +57,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			desc:        "interval too short",
 			updateFunc:  func(cfg *Config) { cfg.Interval = 1 * time.Minute },
-			expectedErr: "interval must be at least 5 minutes",
+			expectedErr: fmt.Sprintf("interval must be at least %d minutes", minimumInterval/time.Minute),
 		},
 		{
 			desc:        "timeout zero",

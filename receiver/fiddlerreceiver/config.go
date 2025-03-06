@@ -13,6 +13,8 @@ const (
 	minimumInterval  = 5 * time.Minute
 )
 
+var defaultEnabledMetrics = []string{"drift", "traffic", "performance", "statistic", "service_metrics"}
+
 // Config defines configuration for the Fiddler receiver
 type Config struct {
 	// Endpoint for the Fiddler API (e.g., https://app.fiddler.ai)
@@ -40,13 +42,30 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("token must be specified")
 	}
 
+	if len(cfg.EnabledMetrics) > 0 {
+		// Validate that the enabled metrics are known types
+		supportedMetricTypes := map[string]bool{
+			"drift":           true,
+			"traffic":         true,
+			"performance":     true,
+			"statistic":       true,
+			"service_metrics": true,
+		}
+
+		for _, metric := range cfg.EnabledMetrics {
+			if !supportedMetricTypes[metric] {
+				return fmt.Errorf("unknown metric type: %s", metric)
+			}
+		}
+	}
+
 	if cfg.Interval == 0 {
 		cfg.Interval = defaultInterval
 		return nil
 	}
 
 	if cfg.Interval < minimumInterval {
-		return fmt.Errorf("interval must be at least 5 minutes")
+		return fmt.Errorf("interval must be at least %d minutes", minimumInterval/time.Minute)
 	}
 
 	if cfg.Timeout <= 0 {

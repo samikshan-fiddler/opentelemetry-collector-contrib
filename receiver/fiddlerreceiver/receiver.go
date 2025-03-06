@@ -21,7 +21,9 @@ const (
 	defaultBinSize = time.Hour
 )
 
-var defaultEnabledMetrics = []string{"drift", "traffic", "performance", "statistic", "service_metrics"}
+var (
+	errNoModelsAvailable = fmt.Errorf("no models available in Fiddler API")
+)
 
 type fiddlerReceiver struct {
 	settings receiver.Settings
@@ -89,7 +91,12 @@ func (fr *fiddlerReceiver) collect(ctx context.Context) error {
 	// List all models
 	models, err := fr.client.ListModels(ctx)
 	if err != nil {
-		return fmt.Errorf("error listing models: %w", err)
+		fr.logger.Error("Failed to list models, aborting collection", zap.Error(err))
+		return err
+	}
+
+	if len(models) == 0 {
+		return errNoModelsAvailable
 	}
 
 	fr.logger.Debug("Found models from Fiddler API", zap.Int("count", len(models)))
@@ -173,7 +180,13 @@ func (fr *fiddlerReceiver) collect(ctx context.Context) error {
 
 	// Build and send metrics
 	metrics := mb.Build()
-	return fr.consumer.ConsumeMetrics(ctx, metrics)
+	if err := fr.consumer.ConsumeMetrics(ctx, metrics); err != nil {
+		fr.logger.Error("Failed to consume and process OTLP metrics", zap.Error(err))
+		return err
+	}
+
+	fr.logger.Info("Successfully collected and processed metrics from Fiddler API")
+	return nil
 }
 
 func (fr *fiddlerReceiver) createQueries(ctx context.Context, modelID string, metrics []client.Metric) ([]client.Query, error) {
