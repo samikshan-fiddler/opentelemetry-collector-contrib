@@ -12,10 +12,6 @@ var (
 	typeStr = component.MustNewType("fiddler")
 )
 
-const (
-	defaultInterval = "30m"
-)
-
 // NewFactory creates a factory for Fiddler receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -26,7 +22,11 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Interval: defaultInterval,
+		Endpoint:           defaultEndpoint,
+		Token:              defaultAuthToken,
+		Timeout:            defaultTimeout,
+		Interval:           defaultInterval,
+		EnabledMetricTypes: defaultEnabledMetricTypes,
 	}
 }
 
@@ -37,5 +37,5 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := baseCfg.(*Config)
-	return newFiddlerReceiver(cfg, consumer), nil
+	return newFiddlerReceiver(cfg, consumer, params), nil
 }
