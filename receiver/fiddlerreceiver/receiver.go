@@ -69,6 +69,10 @@ func (fr *fiddlerReceiver) Start(ctx context.Context, host component.Host) error
 }
 
 func (fr *fiddlerReceiver) startCollection(ctx context.Context) {
+	if err := fr.collect(ctx); err != nil {
+		fr.logger.Error("Failed to collect metrics from Fiddler", zap.Error(err))
+	}
+
 	ticker := time.NewTicker(fr.config.Interval)
 	defer ticker.Stop()
 

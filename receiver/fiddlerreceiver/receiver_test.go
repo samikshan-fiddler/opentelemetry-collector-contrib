@@ -162,24 +162,32 @@ func TestCollect(t *testing.T) {
 	settings.Logger = logger
 	fr := newFiddlerReceiver(config, sink, settings)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Start the receiver
-	err := fr.Start(context.Background(), componenttest.NewNopHost())
+	err := fr.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	// Force a collection
-	err = fr.collect(context.Background())
-	require.NoError(t, err)
-
-	// Verify that metrics were received
+	// Wait for the initial collection to complete and verify
 	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) > 0
-	}, 2*time.Second, 10*time.Millisecond, "no metrics were collected")
+	}, 2*time.Second, 10*time.Millisecond, "expected at least one metric collection")
 
-	// Verify metrics content
+	initialMetricsCount := len(sink.AllMetrics())
+
+	// Force another collection
+	err = fr.collect(ctx)
+	require.NoError(t, err)
+
+	// Verify that we got one more metric collection
+	assert.Eventually(t, func() bool {
+		return len(sink.AllMetrics()) == initialMetricsCount+1
+	}, 2*time.Second, 10*time.Millisecond, "expected one additional metric collection")
+
 	mtrcs := sink.AllMetrics()
-	require.Len(t, mtrcs, 1)
+	require.NotEmpty(t, mtrcs)
 
-	// Shutdown
 	err = fr.Shutdown(context.Background())
 	require.NoError(t, err)
 }
