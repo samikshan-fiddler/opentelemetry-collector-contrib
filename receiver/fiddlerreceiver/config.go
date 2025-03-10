@@ -13,7 +13,7 @@ const (
 	minimumInterval  = 5 * time.Minute
 )
 
-var defaultEnabledMetrics = []string{"drift", "traffic", "performance", "statistic", "service_metrics"}
+var defaultEnabledMetricTypes = []string{"drift", "traffic", "performance", "statistic", "service_metrics"}
 
 // Config defines configuration for the Fiddler receiver
 type Config struct {
@@ -29,8 +29,8 @@ type Config struct {
 	// Interval for data collection (minimum 5 minutes)
 	Interval time.Duration `mapstructure:"interval"`
 
-	// EnabledMetrics is the list of metrics to collect
-	EnabledMetrics []string `mapstructure:"enabled_metrics"`
+	// EnabledMetricTypes is the list of metric types to collect
+	EnabledMetricTypes []string `mapstructure:"enabled_metric_types"`
 }
 
 func (cfg *Config) Validate() error {
@@ -42,8 +42,8 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("token must be specified")
 	}
 
-	if len(cfg.EnabledMetrics) > 0 {
-		// Validate that the enabled metrics are known types
+	if len(cfg.EnabledMetricTypes) > 0 {
+		// Validate that the enabled metric types are known types
 		supportedMetricTypes := map[string]bool{
 			"drift":           true,
 			"traffic":         true,
@@ -52,9 +52,9 @@ func (cfg *Config) Validate() error {
 			"service_metrics": true,
 		}
 
-		for _, metric := range cfg.EnabledMetrics {
-			if !supportedMetricTypes[metric] {
-				return fmt.Errorf("unknown metric type: %s", metric)
+		for _, metricType := range cfg.EnabledMetricTypes {
+			if !supportedMetricTypes[metricType] {
+				return fmt.Errorf("unknown metric type: %s", metricType)
 			}
 		}
 	}

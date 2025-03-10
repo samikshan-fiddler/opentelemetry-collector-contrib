@@ -22,11 +22,11 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint:       defaultEndpoint,
-		Token:          defaultAuthToken,
-		Timeout:        defaultTimeout,
-		Interval:       defaultInterval,
-		EnabledMetrics: defaultEnabledMetrics,
+		Endpoint:           defaultEndpoint,
+		Token:              defaultAuthToken,
+		Timeout:            defaultTimeout,
+		Interval:           defaultInterval,
+		EnabledMetricTypes: defaultEnabledMetricTypes,
 	}
 }
 

@@ -59,7 +59,7 @@ func (fr *fiddlerReceiver) Start(ctx context.Context, host component.Host) error
 	fr.logger.Info("Starting Fiddler metrics receiver",
 		zap.String("endpoint", fr.config.Endpoint),
 		zap.Duration("interval", fr.config.Interval),
-		zap.Strings("enabled_metrics", fr.config.EnabledMetrics),
+		zap.Strings("enabled_metrics", fr.config.EnabledMetricTypes),
 	)
 
 	go fr.startCollection(ctx)
@@ -127,7 +127,7 @@ func (fr *fiddlerReceiver) collect(ctx context.Context) error {
 		// Filter metrics by enabled types
 		var enabledMetrics []client.Metric
 		for _, metric := range metrics {
-			if isMetricEnabled(metric.Type, fr.config.EnabledMetrics) {
+			if isMetricEnabled(metric.Type, fr.config.EnabledMetricTypes) {
 				enabledMetrics = append(enabledMetrics, metric)
 			}
 		}
