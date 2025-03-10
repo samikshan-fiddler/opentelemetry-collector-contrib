@@ -5,6 +5,7 @@ package fiddlerreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -226,6 +227,13 @@ func (fr *fiddlerReceiver) createQueries(ctx context.Context, modelID string, me
 			ModelID:    modelID,
 			BaselineID: baselineID,
 		})
+	}
+
+	prettyJSON, err := json.MarshalIndent(queries, "", "  ")
+	if err != nil {
+		fr.logger.Debug("Created queries (failed to format as JSON)", zap.Any("queries", queries))
+	} else {
+		fr.logger.Debug("Created queries", zap.String("queries", string(prettyJSON)))
 	}
 
 	return queries, nil
