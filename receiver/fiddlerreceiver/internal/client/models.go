@@ -8,6 +8,7 @@ type Model struct {
 	ID      string  `json:"id"`
 	Name    string  `json:"name"`
 	Project Project `json:"project"`
+	Version string  `json:"version"`
 }
 
 // Project represents a Fiddler project
