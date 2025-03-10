@@ -59,7 +59,7 @@ func (fr *fiddlerReceiver) Start(ctx context.Context, host component.Host) error
 	fr.logger.Info("Starting Fiddler metrics receiver",
 		zap.String("endpoint", fr.config.Endpoint),
 		zap.Duration("interval", fr.config.Interval),
-		zap.Strings("enabled_metrics", fr.config.EnabledMetricTypes),
+		zap.Strings("enabled_metric_types", fr.config.EnabledMetricTypes),
 	)
 
 	go fr.startCollection(ctx)
