@@ -168,7 +168,7 @@ func extractTimestamp(row []interface{}, colNames []string) (time.Time, bool) {
 	if timestampColIdx >= 0 && timestampColIdx < len(row) {
 		if tsStr, ok := row[timestampColIdx].(string); ok {
 			if t, err := time.Parse(time.RFC3339, tsStr); err == nil {
-				return t, true
+				return t.UTC(), true
 			}
 		}
 	}

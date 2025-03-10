@@ -313,12 +313,21 @@ func TestExtractTimestamp(t *testing.T) {
 		row      []interface{}
 		colNames []string
 		expectOk bool
+		expected time.Time
 	}{
 		{
 			name:     "string timestamp",
 			row:      []interface{}{"2023-01-01T12:00:00Z", 123},
 			colNames: []string{"timestamp", "value"},
 			expectOk: true,
+			expected: time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC),
+		},
+		{
+			name:     "string timestamp",
+			row:      []interface{}{"2023-01-01T12:00:00Z", 123},
+			colNames: []string{"timestamp", "value"},
+			expectOk: true,
+			expected: time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC),
 		},
 		{
 			name:     "no timestamp column",
