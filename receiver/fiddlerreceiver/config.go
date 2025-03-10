@@ -42,23 +42,6 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("token must be specified")
 	}
 
-	if len(cfg.EnabledMetricTypes) > 0 {
-		// Validate that the enabled metric types are known types
-		supportedMetricTypes := map[string]bool{
-			"drift":           true,
-			"traffic":         true,
-			"performance":     true,
-			"statistic":       true,
-			"service_metrics": true,
-		}
-
-		for _, metricType := range cfg.EnabledMetricTypes {
-			if !supportedMetricTypes[metricType] {
-				return fmt.Errorf("unknown metric type: %s", metricType)
-			}
-		}
-	}
-
 	if cfg.Interval == 0 {
 		cfg.Interval = defaultInterval
 		return nil
